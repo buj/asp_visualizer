@@ -9,10 +9,13 @@ from visual import *
 
 
 stylesheet1 = {
-  "event": {
+  "mev": {
     "shape": "rectangle"
   },
-  "variable": {
+  "xev": {
+    "shape": "rectangle"
+  },
+  "var": {
     "shape": "invtriangle",
     "color": "gray"
   },
@@ -41,12 +44,6 @@ stylesheet1 = {
     "arrowhead": "vee",
     "arrowsize": 0.5,
     "dir": "back"
-  },
-  "locationOf": {
-    "label": "",
-    "color": "gray",
-    "arrowhead": "dot",
-    "arrowsize": 0.5
   },
   "derivedHappensBefore": {
     "label": "",
@@ -80,3 +77,6 @@ vkb.add_formats(**stylesheet1)
 cmd = ' '.join([args.viz, "-Tpng", "-o", args.output_file])
 logging.info("Executing command:", cmd)
 subprocess.run(cmd, shell=True, input=str(vkb).encode("utf-8"))
+
+with open("tmp.log", "w") as fout:
+  print(vkb, file=fout)

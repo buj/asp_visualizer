@@ -42,16 +42,14 @@ class WithAttrs:
 
 
 class Node(WithAttrs):
-  def __init__(self, term, tags=[], **kwargs):
+  def __init__(self, term, **kwargs):
     WithAttrs.__init__(self, **kwargs)
     self.term = term
-    self.tags = set(tags)
     self.name = viz_repr(str(self.term))
   
-  def add_tag(self, tag):
-    if tag not in self.tags:
-      self.tags.add(tag)
-      return True
+  @property
+  def t(self):
+    return self.term.fname
   
   def __str__(self):
     return f"{self.name} [{', '.join(self.attr_strs())}]"
@@ -62,7 +60,7 @@ class Edge(WithId, WithAttrs):
     if "label" not in kwargs:
       kwargs["label"] = t
     WithAttrs.__init__(self, **kwargs)
-    self.name = f"edge{self.next_id()}"
+    self.name = f"edge({t}){self.next_id()}"
     self.t = t
     self.src = src
     self.dest = dest
@@ -71,13 +69,35 @@ class Edge(WithId, WithAttrs):
     return f'{self.src.name} -> {self.dest.name} [{", ".join(self.attr_strs())}]'
 
 
+def interpret_term(term):
+  if term.arity == 0 and term.fname[0] == '"' and term.fname[-1] == '"':
+    return str(term)[1:-1]
+  if term.fname == "int":
+    assert term.arity == 1, "Int term must have arity 1"
+    return int(str(term.subs[0]))
+  if term.fname == "float":
+    assert term.arity == 1, "Float term must have arity 1"
+    return float(str(term.subs[0]))
+  return str(term)
+
 class VisualKB:
   def __init__(self, kb=KB()):
     self.nodes = {}
     self.edges = {}
     self.formatting = {}
+    self.fterms = []
     for term in kb:
       self.add(term)
+  
+  def declare_node(self, term):
+    name = str(term)
+    if name not in self.nodes:
+      self.nodes[name] = Node(term)
+      return True
+  
+  def node(self, term):
+    self.declare_node(term)
+    return self.nodes[str(term)]
   
   def apply_format(self):
     """Applies formatting to all nodes and edges. Node are identified
@@ -89,13 +109,20 @@ class VisualKB:
       edge.clear_attrs()
     for key, fmt in self.formatting.items():
       for node in self.nodes.values():
-        if key not in node.tags:
+        if key != node.t:
           continue
         node.update_attrs(**fmt)
       for edge in self.edges.values():
         if key != edge.t:
           continue
         edge.update_attrs(**fmt)
+    for term in self.fterms:
+      if term.fname == "attr":
+        assert len(term.subs) == 3, "attr term must have arity 3 (node, attrname, val)"
+        node = self.node(term.subs[0])
+        key = str(term.subs[1])
+        val = interpret_term(term.subs[2])
+        node[key] = val
   
   def add_format(self, fname, attrs):
     self.formatting[fname] = attrs
@@ -109,26 +136,18 @@ class VisualKB:
       del self.formatting[fname]
       return True
   
-  def declare_node(self, term):
-    name = str(term)
-    if name not in self.nodes:
-      self.nodes[name] = Node(term)
-      return True
-  
   def add(self, term):
-    assert 1 <= term.arity <= 2, "Currently can handle only node-properties and edges"
     if term.arity == 1:
       subterm = term.subs[0]
-      self.declare_node(subterm)
-      node = self.nodes[str(subterm)]
-      node.add_tag(term.fname)
-    elif term.arity == 2:
-      for subterm in term.subs:
-        self.declare_node(subterm)
-      src = self.nodes[str(term.subs[0])]
-      dest = self.nodes[str(term.subs[1])]
+      return self.declare_node(subterm)
+    if term.arity == 2:
+      src = self.node(term.subs[0])
+      dest = self.node(term.subs[1])
       e = Edge(term.fname, src, dest)
       self.edges[e.name] = e
+      return True
+    if term.arity == 3 and term.fname == "attr":
+      self.fterms.append(term)
   
   def __str__(self):
     """Output in graphviz format."""
