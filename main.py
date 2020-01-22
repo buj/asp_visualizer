@@ -2,10 +2,15 @@ import sys, subprocess
 import argparse
 import logging
 
-logging.basicConfig(level = logging.WARNING)
+logging.basicConfig(level = logging.INFO)
 
 from base import *
 from visual import *
+
+
+def run_sh(cmd, **kwargs):
+  logging.info(f"Executing command: {cmd}")
+  subprocess.run(cmd, shell=True, **kwargs)
 
 
 stylesheet1 = {
@@ -48,6 +53,19 @@ stylesheet1 = {
     "arrowhead": "vee",
     "arrowsize": 1
   },
+  "exportsToCandidate": {
+    "label": "",
+    "style": "dashed",
+    "color": "darkgreen",
+    "arrowhead": "vee",
+    "arrowsize": 1
+  },
+  "exportsTo": {
+    "label": "",
+    "color": "darkgreen",
+    "arrowhead": "vee",
+    "arrowsize": 1
+  },
   "coolHappensBefore": {
     "label": "",
     "style": "dashed",
@@ -61,12 +79,13 @@ stylesheet1 = {
 }
 
 def dlv_strip(line):
-  if line[:5] == "Cost:" or line[:3] == "DLV":
+  if line[:4] == "Cost" or line[:3] == "DLV":
     return ""
   line = line.lstrip("Best model: ")
+  line = line.strip()
   return line
 
-def from_file(fname):
+def models_from(fname):
   res = []
   with open(fname, "r") as fin:
     for line in fin:
@@ -74,26 +93,25 @@ def from_file(fname):
       if line == "":
         continue
       res += [line]
-  return '\n'.join(res)
+  return res
 
 
 parser = argparse.ArgumentParser()
 parser.add_argument("input_file", type=str)
-parser.add_argument("output_file", type=str)
+parser.add_argument("output_folder", type=str)
 parser.add_argument("--viz", type=str, default="dot", help="which graphviz to use")
 args, g_args = parser.parse_known_args()
 
-inp = from_file(args.input_file)
-vkb = VisualKB(Parser(inp).parse_kb())
-vkb.add_formats(**stylesheet1)
-for g_arg in g_args:
-  ls = g_arg.strip().split('=')
-  assert len(ls) == 2, "Graph attribute arguments should have format 'key=val'"
-  vkb.set_g_attr(ls[0], ls[1])
-
-cmd = ' '.join([args.viz, "-Tpng", "-o", args.output_file])
-logging.info("Executing command:", cmd)
-subprocess.run(cmd, shell=True, input=str(vkb).encode("utf-8"))
-
-with open("tmp.log", "w") as fout:
-  print(vkb, file=fout)
+models = models_from(args.input_file)
+run_sh(f"mkdir {args.output_folder}")
+for i, model in enumerate(models):
+  # Construct the VKB and parameters
+  vkb = VisualKB(Parser(model).parse_kb())
+  vkb.add_formats(**stylesheet1)
+  for g_arg in g_args:
+    ls = g_arg.strip().split('=')
+    assert len(ls) == 2, "Graph attribute arguments should have format 'key=val'"
+    vkb.set_g_attr(ls[0], ls[1])
+  # Output to .png
+  cmd = ' '.join([args.viz, "-Tpng", "-o", f"{args.output_folder}/{i}.png"])
+  run_sh(cmd, input=str(vkb).encode("utf-8"))

@@ -33,7 +33,7 @@ class KB:
     assert isinstance(sub, Term), "Cannot add a non-term!"
     key = str(sub)
     if key in self.mapping:
-      logging.info(f"Cannot add {key}, already in this Base, aborting")
+      logging.debug(f"Cannot add {key}, already in this Base, aborting")
       return False
     self.mapping[key] = sub
     return True
@@ -42,7 +42,7 @@ class KB:
     assert isinstance(sub, Term), "Cannot remove a non-term!"
     key = str(sub)
     if key not in self.mapping:
-      logging.info(f"Cannot remove {key}, not in this Base, aborting")
+      logging.debug(f"Cannot remove {key}, not in this Base, aborting")
       return False
     del self.mapping[key]
     return True
@@ -94,7 +94,7 @@ class Parser:
   
   def advance(self, k=1):
     if self.pos >= len(self.string):
-      logging.info(f"Couldn't advance parser, already at end")
+      logging.debug(f"Couldn't advance parser, already at end")
       return ""
     res = self.string[self.pos : self.pos + k]
     self.pos += k
@@ -103,7 +103,7 @@ class Parser:
   @property
   def curr_char(self):
     if self.pos >= len(self.string):
-      logging.info(f"No current character, already at end")
+      logging.debug(f"No current character, already at end")
       return None
     return self.string[self.pos]
   
@@ -115,13 +115,13 @@ class Parser:
     while self.curr_char and valid_id_char(self.curr_char):
       res += self.advance()
     if res == "":
-      logging.info(f"Empty name at {self}")
+      logging.debug(f"Empty name at {self}")
     return res
   
   def parse_const(self, c):
     n = len(c)
     if self.next_few(n) != c:
-      logging.info(f"Cannot read const '{c}' at {self}")
+      logging.debug(f"Cannot read const '{c}' at {self}")
       return ""
     return self.advance(n)
   
