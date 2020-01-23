@@ -19,10 +19,14 @@ stylesheet1 = {
     "fontcolor": "red"
   },
   "mev": {
-    "shape": "rectangle"
+    "shape": "rectangle",
+    "style": "filled",
+    "fillcolor": "white"
   },
   "xev": {
-    "shape": "rectangle"
+    "shape": "rectangle",
+    "style": "filled",
+    "fillcolor": "white"
   },
   "var": {
     "shape": "invtriangle",
@@ -38,12 +42,6 @@ stylesheet1 = {
   "commits": {
     "label": "",
     "color": "red",
-    "arrowhead": "vee",
-    "arrowsize": 1
-  },
-  "mustHappenBefore": {
-    "label": "",
-    "style": "bold",
     "arrowhead": "vee",
     "arrowsize": 1
   },
@@ -66,14 +64,29 @@ stylesheet1 = {
     "arrowhead": "vee",
     "arrowsize": 1
   },
-  "coolHappensBefore": {
+  "showTrivialHappensBefore": {
+    "label": "",
+    "style": "bold",
+    "arrowhead": "vee",
+    "arrowsize": 1
+  },
+  "showHappensBefore": {
     "label": "",
     "style": "dashed",
     "arrowhead": "vee",
     "arrowsize": 1
   },
+  "showNext": {
+    "label": "",
+    "style": "bold",
+    "color": "#888888"
+  },
+  "mainThread": {
+    "color": "#cccccc",
+    "style": "filled"
+  },
   "auxThread": {
-    "color": "lightgray",
+    "color": "#e6e6e6",
     "style": "filled"
   }
 }
@@ -81,7 +94,8 @@ stylesheet1 = {
 def dlv_strip(line):
   if line[:4] == "Cost" or line[:3] == "DLV":
     return ""
-  line = line.lstrip("Best model: ")
+  if line[:12] == "Best model: ":
+    line = line[12:]
   line = line.strip()
   return line
 
