@@ -1,6 +1,7 @@
 import sys, subprocess
 import argparse
 import logging
+import json
 
 logging.basicConfig(level = logging.INFO)
 
@@ -13,84 +14,6 @@ def run_sh(cmd, **kwargs):
   subprocess.run(cmd, shell=True, **kwargs)
 
 
-stylesheet1 = {
-  "closureContradiction": {
-    "shape": "plaintext",
-    "fontcolor": "red"
-  },
-  "mev": {
-    "shape": "rectangle",
-    "style": "filled",
-    "fillcolor": "white"
-  },
-  "xev": {
-    "shape": "rectangle",
-    "style": "filled",
-    "fillcolor": "white"
-  },
-  "var": {
-    "shape": "invtriangle",
-    "color": "gray"
-  },
-  "threadSucc": {
-    "label": "",
-    "color": "red",
-    "style": "bold",
-    "arrowhead": "vee",
-    "arrowsize": 1
-  },
-  "commits": {
-    "label": "",
-    "color": "red",
-    "arrowhead": "vee",
-    "arrowsize": 1
-  },
-  "exportsToTarget": {
-    "label": "",
-    "color": "green",
-    "arrowhead": "vee",
-    "arrowsize": 1
-  },
-  "exportsToCandidate": {
-    "label": "",
-    "style": "dashed",
-    "color": "darkgreen",
-    "arrowhead": "vee",
-    "arrowsize": 1
-  },
-  "exportsTo": {
-    "label": "",
-    "color": "darkgreen",
-    "arrowhead": "vee",
-    "arrowsize": 1
-  },
-  "showTrivialHappensBefore": {
-    "label": "",
-    "style": "bold",
-    "arrowhead": "vee",
-    "arrowsize": 1
-  },
-  "showHappensBefore": {
-    "label": "",
-    "style": "dashed",
-    "arrowhead": "vee",
-    "arrowsize": 1
-  },
-  "showNext": {
-    "label": "",
-    "style": "bold",
-    "color": "#888888"
-  },
-  "mainThread": {
-    "color": "#cccccc",
-    "style": "filled"
-  },
-  "auxThread": {
-    "color": "#e6e6e6",
-    "style": "filled"
-  }
-}
-
 def dlv_strip(line):
   if line[:4] == "Cost" or line[:3] == "DLV":
     return ""
@@ -99,29 +22,37 @@ def dlv_strip(line):
   line = line.strip()
   return line
 
-def models_from(fname):
+def models_from(fin):
   res = []
-  with open(fname, "r") as fin:
-    for line in fin:
-      line = dlv_strip(line)
-      if line == "":
-        continue
-      res += [line]
+  for line in fin:
+    line = dlv_strip(line)
+    if line == "":
+      continue
+    res += [line]
   return res
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument("input_file", type=str)
-parser.add_argument("output_folder", type=str)
+parser.add_argument("stylesheet", type=str)
+parser.add_argument("--input_file", type=str, help="load model from where? (default = stdin)")
+parser.add_argument("--output_folder", type=str, default="./asp_imgs", help="where store the images? (default = ./asp_imgs)")
 parser.add_argument("--viz", type=str, default="dot", help="which graphviz to use")
 args, g_args = parser.parse_known_args()
 
-models = models_from(args.input_file)
+# Process the arguments
+with open(args.stylesheet, "r") as fin:
+  stylesheet = json.load(fin)
+if args.input_file is None:
+  models = models_from(sys.stdin)
+else:
+  with open(args.input_file, "r") as fin:
+    models = models_from(fin)
 run_sh(f"mkdir {args.output_folder}")
+
 for i, model in enumerate(models):
   # Construct the VKB and parameters
   vkb = VisualKB(Parser(model).parse_kb())
-  vkb.add_formats(**stylesheet1)
+  vkb.add_formats(**stylesheet)
   for g_arg in g_args:
     ls = g_arg.strip().split('=')
     assert len(ls) == 2, "Graph attribute arguments should have format 'key=val'"
