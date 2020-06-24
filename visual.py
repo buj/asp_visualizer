@@ -252,17 +252,22 @@ class VisualKB:
     for term in self.fterms:
       if term.fname == "attr":
         assert len(term.subs) == 3, "attr term must have arity 3 (node, attrname, val)"
-        point = self.point(term.subs[0])
+        name = str(term.subs[0])
+        tgt = (self.edges[name] if name in self.edges else self.point(term.subs[0]))
         key = str(term.subs[1])
         val = interpret_term(term.subs[2])
-        point[key] = val
+        tgt[key] = val
   
   def add_format(self, fname, attrs):
     self.formatting[fname] = attrs
   
   def add_formats(self, **kwargs):
     for fname, attrs in kwargs.items():
-      self.add_format(fname, attrs)
+      if fname == "#global":
+        for key, val in attrs.items():
+          self.set_g_attr(key, val)
+      else:
+        self.add_format(fname, attrs)
   
   def clear_format(self, fname):
     if fname in self.formatting:

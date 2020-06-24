@@ -19,7 +19,7 @@ class Term:
   def __str__(self):
     if len(self.subs) == 0:
       return self.fname
-    return f"{self.fname}({','.join(map(str, self.subs))})"
+    return f'{self.fname}({", ".join(map(str, self.subs))})'
 
 
 class KB:
