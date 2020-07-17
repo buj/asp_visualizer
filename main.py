@@ -35,7 +35,8 @@ def models_from(fin):
 parser = argparse.ArgumentParser()
 parser.add_argument("--stylesheet", type=str)
 parser.add_argument("--input_file", type=str, help="load model from where? (default = stdin)")
-parser.add_argument("--output_folder", type=str, default="./asp_imgs", help="where store the images? (default = ./asp_imgs)")
+parser.add_argument("--output_folder", type=str, default="./asp_imgs", help="where store the images?")
+parser.add_argument("--fmt", type=str, default="png", help="output format")
 parser.add_argument("--viz", type=str, default="dot", help="which graphviz to use")
 args, g_args = parser.parse_known_args()
 
@@ -61,6 +62,10 @@ for i, model in enumerate(models):
     ls = g_arg.strip().split('=')
     assert len(ls) == 2, "Graph attribute arguments should have format 'key=val'"
     vkb.set_g_attr(ls[0], ls[1])
-  # Output to .png
-  cmd = ' '.join([args.viz, "-Tpng", "-o", f"{args.output_folder}/{i}.png"])
-  run_sh(cmd, input=str(vkb).encode("utf-8"))
+  # Output to fmt; .tex is a special case
+  output_file = f"{args.output_folder}/{i}.{args.fmt}"
+  if args.fmt == "tex":
+    cmd = f"{args.viz} | dot2tex --autosize -tmath -ftikz --figonly"
+  else:
+    cmd = f"{args.viz} -T{args.fmt}"
+  run_sh(f"{cmd} > {output_file}", input=str(vkb).encode("utf-8"))
