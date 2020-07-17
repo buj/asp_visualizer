@@ -63,9 +63,16 @@ for i, model in enumerate(models):
     assert len(ls) == 2, "Graph attribute arguments should have format 'key=val'"
     vkb.set_g_attr(ls[0], ls[1])
   # Output to fmt; .tex is a special case
-  output_file = f"{args.output_folder}/{i}.{args.fmt}"
+  out_file = f"{args.output_folder}/{i}.{args.fmt}"
+  feed = str(vkb).encode("utf-8")
   if args.fmt == "tex":
-    cmd = f"{args.viz} | dot2tex --autosize -tmath -ftikz --figonly"
+    cmd1 = f"{args.viz} | dot2tex --autosize -tmath -ftikz --figonly > {out_file}"
+    cmd2 = '; '.join([
+      f"cd {args.output_folder}",
+      f"{args.viz} | dot2tex --autosize -tmath -ftikz | pdflatex -jobname={i} > /dev/null"
+    ])
+    run_sh(cmd1, input=feed)
+    run_sh(cmd2, input=feed)
   else:
-    cmd = f"{args.viz} -T{args.fmt}"
-  run_sh(f"{cmd} > {output_file}", input=str(vkb).encode("utf-8"))
+    cmd = f"{args.viz} -T{args.fmt} > {out_file}"
+    run_sh(cmd, input=feed)

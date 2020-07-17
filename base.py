@@ -78,7 +78,7 @@ class KB:
 
 
 def valid_id_char(ch):
-  return ch.isalpha() or ch.isdigit() or ch in ['-', '_', '"', '#']
+  return ch.isalpha() or ch.isdigit() or ch in ['-', '_', '"', '#', '\\']
 
 
 class Parser:

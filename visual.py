@@ -170,6 +170,17 @@ class Edge(WithId, WithAttrs, WithTags):
     return f'{self.src.repr_name} -> {self.dest.repr_name} [{", ".join(attrs)}]'
 
 
+def interpret_as_tex(term):
+  if term.fname in ["sub", "sup"]:
+    assert term.arity == 2, "Subscript/superscript operation must have 2 arguments"
+    x = interpret_as_tex(term.subs[0])
+    y = interpret_as_tex(term.subs[1])
+    op = {"sub": "_", "sup": "^"}[term.fname]
+    return f"{{{x}}}{op}{{{y}}}"
+  if term.arity == 0 and term.fname[0] == '"' and term.fname[-1] == '"':
+    return str(term)[1:-1]
+  return str(term)
+
 def interpret_term(term):
   if term.arity == 0 and term.fname[0] == '"' and term.fname[-1] == '"':
     return str(term)[1:-1]
@@ -179,6 +190,9 @@ def interpret_term(term):
   if term.fname == "float":
     assert term.arity == 1, "Float term must have arity 1"
     return float(str(term.subs[0]))
+  if term.fname == "tex":
+    assert term.arity == 1, "Tex term must have arity 1"
+    return interpret_as_tex(term.subs[0])
   return str(term)
 
 
