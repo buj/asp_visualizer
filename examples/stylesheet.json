@@ -1,0 +1,10 @@
+{
+  "node": {
+    "shape": "box",
+    "fontcolor": "red"
+  },
+  "edge": {
+    "style": "dashed",
+    "color": "gray"
+  }
+}

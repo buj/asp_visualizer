@@ -4,7 +4,7 @@ import subprocess
 
 class Term:
   def __init__(self, fname, subs):
-    self.fname = fname
+    self.fname = fname.strip('"')
     self.subs = subs
   
   @property
@@ -78,12 +78,12 @@ class KB:
 
 
 def valid_id_char(ch):
-  return ch.isalpha() or ch.isdigit() or ch in ['-', '_', '"', '#', '\\']
+  return ch.isalpha() or ch.isdigit() or ch in ['-', '_', '#', '\\', '{', '}']
 
 
 class Parser:
   def __init__(self, string):
-    self.string = "".join(string.split())
+    self.string = string
     self.pos = 0
   
   def __str__(self):
@@ -107,10 +107,27 @@ class Parser:
       return None
     return self.string[self.pos]
   
+  def skipWhite(self):
+    while self.curr_char.isspace():
+      self.advance()
+  
   def next_few(self, k):
     return self.string[self.pos : self.pos + k]
   
+  def parse_str(self):
+    self.skipWhite()
+    if self.curr_char == '"':
+      res = ""
+      res += self.advance()
+      while self.curr_char and self.curr_char != '"':
+        res += self.advance()
+      if self.curr_char == '"':
+        res += self.advance()
+        return res
+    logging.debug(f"Ill-formed string: \"{res}")
+  
   def parse_name(self):
+    self.skipWhite()
     res = ""
     while self.curr_char and valid_id_char(self.curr_char):
       res += self.advance()
@@ -119,6 +136,7 @@ class Parser:
     return res
   
   def parse_const(self, c):
+    self.skipWhite()
     n = len(c)
     if self.next_few(n) != c:
       logging.debug(f"Cannot read const '{c}' at {self}")
@@ -126,6 +144,12 @@ class Parser:
     return self.advance(n)
   
   def parse_term(self):
+    self.skipWhite()
+    if self.curr_char == '"':
+      fname = self.parse_str()
+      if fname is not None:
+        return Term(fname, [])
+      return
     fname = self.parse_name()
     if fname == "":
       return
@@ -134,7 +158,7 @@ class Parser:
     subs = []
     while True:
       sub = self.parse_term()
-      if not sub:
+      if sub is None:
         return
       subs.append(sub)
       if self.parse_const(")"):
@@ -143,6 +167,7 @@ class Parser:
         return
   
   def parse_kb(self):
+    """The kb syntax is: { <list_of_truths> }."""
     if not self.parse_const("{"):
       return
     subs = []

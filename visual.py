@@ -112,6 +112,7 @@ class Point(WithId, WithAttrs, WithTags, WithParent, WithChildren):
   
   @property
   def is_sg(self):
+    """Sg means subgraph"""
     return self.has_child or self.has_tag("cluster")
   
   @property
@@ -182,8 +183,6 @@ def interpret_as_tex(term):
   return str(term)
 
 def interpret_term(term):
-  if term.arity == 0 and term.fname[0] == '"' and term.fname[-1] == '"':
-    return str(term)[1:-1]
   if term.fname == "int":
     assert term.arity == 1, "Int term must have arity 1"
     return int(str(term.subs[0]))
